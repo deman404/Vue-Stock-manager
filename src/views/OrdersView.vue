@@ -194,7 +194,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useOrdersStore } from "@/stores/orders";
 import { useAdminStore } from "@/stores/admin";
 import { format } from "date-fns";
@@ -203,8 +203,15 @@ import type { Order } from "@/types";
 import { PlusIcon, ShoppingCartIcon } from "@heroicons/vue/24/outline";
 
 const role = localStorage.getItem("role");
-
 const ordersStore = role === "admin" ? useAdminStore() : useOrdersStore();
+
+onMounted(() => {
+  if (role === "admin") {
+    ordersStore.fetchAllOrders && ordersStore.fetchAllOrders();
+  } else {
+    ordersStore.fetchOrders && ordersStore.fetchOrders();
+  }
+});
 
 const searchQuery = ref("");
 const selectedType = ref("");

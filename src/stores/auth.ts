@@ -17,30 +17,38 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Login
   const login = async (email: string, password: string) => {
-  isLoading.value = true
-  try {
-    const response = await path.post(`/login`, { email, password })
-    const userData = response.data.user
-    user.value = userData
-    console.log('User data:', userData)
+    isLoading.value = true
+    try {
+      const response = await path.post(`/login`, { email, password })
+      const userData = response.data.user
+      user.value = userData
+      console.log('User data:', userData)
 
-    const role = userData.roles?.[0]?.name || 'unknown'
-    console.log('User role:', role)
+      // Accept both array of objects or strings for roles
+      let role = 'unknown'
+      if (Array.isArray(userData.roles)) {
+        if (typeof userData.roles[0] === 'string') {
+          role = userData.roles[0]
+        } else if (userData.roles[0]?.name) {
+          role = userData.roles[0].name
+        }
+      }
+      console.log('User role:', role)
 
-    localStorage.setItem('user', JSON.stringify(userData))
-    localStorage.setItem('role', role)
-    localStorage.setItem('token', response.data.token)
+      localStorage.setItem('user', JSON.stringify(userData))
+      localStorage.setItem('role', role)
+      localStorage.setItem('token', response.data.token)
 
-    return { success: true }
-  } catch (error: any) {
-    return {
-      success: false,
-      error: error.response?.data?.message || 'Erreur lors de la connexion'
+      return { success: true }
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Erreur lors de la connexion'
+      }
+    } finally {
+      isLoading.value = false
     }
-  } finally {
-    isLoading.value = false
   }
-}
 
   // Register
   const register = async (name: string, email: string, password: string) => {
@@ -56,7 +64,7 @@ export const useAuthStore = defineStore('auth', () => {
       const role = response.data.role;
 
       user.value = userData
-      localStorage.setItem('user', JSON.stringify({userData, role}))
+      localStorage.setItem('user', JSON.stringify({ userData, role }))
       localStorage.setItem('token', response.data.token)
 
       return { success: true }
@@ -75,10 +83,11 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
     localStorage.removeItem('user')
     localStorage.removeItem('token')
+    localStorage.removeItem('role')
   }
 
   // Check auth status
- 
+
 
   // Initialize auth state
   const init = () => {
@@ -90,7 +99,7 @@ export const useAuthStore = defineStore('auth', () => {
     //   checkAuth()
     // }
 
-      const storedUser = localStorage.getItem('user')
+    const storedUser = localStorage.getItem('user')
     if (storedUser) {
       user.value = JSON.parse(storedUser)
     }

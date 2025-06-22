@@ -45,7 +45,7 @@ export const useAdminStore = defineStore("admin", () => {
       const response = await path.post(
         `/admin/users/${userId}/assign-delivery`
       );
-      await fetchAllUsers(); // Refresh users list
+      await fetchAllUsers();
       return response.data;
     } catch (err: any) {
       throw new Error(
@@ -60,7 +60,7 @@ export const useAdminStore = defineStore("admin", () => {
       const response = await path.post(
         `/admin/users/${userId}/remove-delivery`
       );
-      await fetchAllUsers(); // Refresh users list
+      await fetchAllUsers();
       return response.data;
     } catch (err: any) {
       throw new Error(
@@ -112,9 +112,12 @@ export const useAdminStore = defineStore("admin", () => {
     error.value = null;
     try {
       const response = await path.get("/products");
-      products.value = response.data;
+      products.value = Array.isArray(response.data)
+        ? response.data
+        : response.data.products || [];
     } catch (err: any) {
       error.value = err.response?.data?.message || "Error loading products";
+      products.value = [];
     } finally {
       isLoading.value = false;
     }

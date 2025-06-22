@@ -7,12 +7,13 @@ export const useProductsStore = defineStore('products', () => {
   const products = ref<Product[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  const stockMovements = ref([])
 
   const lowStockThreshold = 5
-  const lowStockProducts = computed(() => 
+  const lowStockProducts = computed(() =>
     products.value.filter(p => p.stock > 0 && p.stock <= lowStockThreshold)
   )
-  const outOfStockProducts = computed(() => 
+  const outOfStockProducts = computed(() =>
     products.value.filter(p => p.stock === 0)
   )
 
@@ -20,11 +21,17 @@ export const useProductsStore = defineStore('products', () => {
   const fetchProducts = async () => {
     isLoading.value = true
     error.value = null
+    const role = localStorage.getItem("role");
+    let endpoint = "/products";
+    if (role === "customer") {
+      endpoint = "/All_Products";
+    }
     try {
-      const response = await path.get('/All_Products')
-      products.value = response.data
+      const response = await path.get(endpoint)
+      products.value = Array.isArray(response.data) ? response.data : (response.data.products || []);
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Error loading products'
+      products.value = [];
     } finally {
       isLoading.value = false
     }
@@ -92,6 +99,7 @@ export const useProductsStore = defineStore('products', () => {
     products,
     isLoading,
     error,
+    stockMovements,
     lowStockProducts,
     outOfStockProducts,
     fetchProducts,

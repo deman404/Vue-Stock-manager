@@ -62,35 +62,56 @@ const router = createRouter({
       path: '/delivery',
       name: 'Delivery',
       component: () => import('@/views/DeliveryView.vue'),
-      meta: { requiresAuth: true, roles: ['admin', 'manager', 'livreur'] }
+      meta: { requiresAuth: true, roles: ['admin', 'delivery'] }
     },
     {
       path: '/shop',
       name: 'Shop',
       component: () => import('@/views/ShopView.vue'),
-      meta: { requiresAuth: true, roles: ['client'] }
+      meta: { requiresAuth: true, roles: ['customer'] }
     },
     {
       path: '/profile',
       name: 'Profile',
       component: () => import('@/views/ProfileView.vue'),
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/admin/users/create',
+      name: 'AdminUserCreate',
+      component: () => import('@/views/admin/UserCreateView.vue')
+    },
+    {
+      path: '/admin/users',
+      name: 'AdminUsers',
+      component: () => import('@/views/admin/UsersListView.vue')
+    },
+    {
+      path: '/products/create',
+      name: 'ProductCreate',
+      component: () => import('@/views/ProductCreateView.vue')
+    },
+    {
+      path: '/admin/settings',
+      name: 'AdminSettings',
+      component: () => import('@/views/admin/AdminSettingsView.vue')
     }
   ]
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore()
-  
+
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     next('/login')
   } else if (to.meta.requiresGuest && authStore.isAuthenticated) {
     next('/')
   } else if (
-    Array.isArray(to.meta.roles) &&
-    (!authStore.user?.roles || (Array.isArray(authStore.user.roles)
-      ? !authStore.user.roles.some((role: string) => (to.meta.roles as string[]).includes(role))
-      : !(to.meta.roles as string[]).includes(authStore.user.roles))
+    Array.isArray((to.meta as any).roles) &&
+    (
+      !authStore.user?.roles ||
+      !Array.isArray(authStore.user.roles) ||
+      !authStore.user.roles.some((role: any) => ((to.meta as any).roles as string[]).includes(role.name))
     )
   ) {
     next('/')

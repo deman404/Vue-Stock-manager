@@ -9,7 +9,7 @@
         >
           Gestion des Produits
         </h1>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white" v-else>
           Acheter des produits
         </h1>
         <p
@@ -150,7 +150,10 @@
     </div>
 
     <!-- Empty state -->
-    <div v-if="filteredProducts.length === 0" class="text-center py-12">
+    <div
+      v-if="!filteredProducts || filteredProducts.length === 0"
+      class="text-center py-12"
+    >
       <CubeIcon class="w-16 h-16 text-gray-400 mx-auto mb-4" />
       <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
         Aucun produit trouvé
@@ -315,6 +318,12 @@
         </form>
       </div>
     </div>
+
+    <!-- Optionally, display error in the template -->
+    <!-- Add this block just after the header or before the products grid -->
+    <div v-if="productStore.error" class="p-4 bg-red-100 text-red-700 rounded">
+      {{ productStore.error }}
+    </div>
   </div>
 </template>
 
@@ -323,22 +332,20 @@ import { ref, computed, reactive, onMounted } from "vue";
 import type { Product } from "@/types";
 import { useProductsStore } from "@/stores/products";
 import { useAdminStore } from "@/stores/admin";
+import { PlusIcon, PencilIcon, CubeIcon } from "@heroicons/vue/24/outline";
 
-// State
+const userRole = localStorage.getItem("role") || "";
+const haveAccess = computed(() => userRole === "admin");
+const productStore =
+  userRole === "admin" ? useAdminStore() : useProductsStore();
+
 const searchQuery = ref("");
 const stockFilter = ref("");
 const sortBy = ref("name");
 const showAddModal = ref(false);
 const editingProduct = ref<Product | null>(null);
 const stockModalProduct = ref<Product | null>(null);
-const userRole = localStorage.getItem("role") || "";
 
-const haveAccess = computed(() => userRole === "admin");
-
-// ✅ استخدم المتجر المناسب حسب الدور
-const productStore = userRole === "admin" ? useAdminStore() : useProductsStore();
-
-// Formulaires
 const productForm = reactive<Partial<Product>>({
   name: "",
   description: "",
@@ -354,7 +361,9 @@ const stockForm = reactive({
 });
 
 const filteredProducts = computed(() => {
-  let filtered = [...productStore.fetchProducts()];
+  let filtered = Array.isArray(productStore.products)
+    ? [...productStore.products]
+    : [];
 
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
@@ -500,7 +509,6 @@ const updateProduct = async () => {
 };
 
 onMounted(() => {
-  productStore.fetchProducts();
+  productStore.fetchProducts && productStore.fetchProducts();
 });
 </script>
-

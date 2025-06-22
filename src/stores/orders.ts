@@ -7,43 +7,51 @@ export const useOrdersStore = defineStore('orders', () => {
   const orders = ref<Order[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  const clients = ref([])
+  const suppliers = ref([])
 
   // Computed properties
-  const pendingOrders = computed(() => 
+  const pendingOrders = computed(() =>
     orders.value.filter(o => o.status === 'pending')
   )
-  const confirmedOrders = computed(() => 
+  const confirmedOrders = computed(() =>
     orders.value.filter(o => o.status === 'confirmed')
   )
-  const deliveredOrders = computed(() => 
+  const deliveredOrders = computed(() =>
     orders.value.filter(o => o.status === 'delivered')
   )
-  const cancelledOrders = computed(() => 
+  const cancelledOrders = computed(() =>
     orders.value.filter(o => o.status === 'cancelled')
+  )
+  const completedOrders = computed(() =>
+    orders.value.filter(o => o.status === 'delivered')
   )
 
   // Fetch orders based on user role
   const fetchOrders = async () => {
     isLoading.value = true
     error.value = null
+    const role = localStorage.getItem("role");
+    let endpoint = "/orders";
+    if (role === "admin") {
+      endpoint = "/admin/orders";
+    }
     try {
-      const response = await path.get('/orders')
-      orders.value = response.data
+      const response = await path.get(endpoint)
+      orders.value = Array.isArray(response.data) ? response.data : (response.data.orders || []);
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Error loading orders'
+      orders.value = [];
     } finally {
       isLoading.value = false
     }
   }
 
   // Create new order
-  const createOrder = async (items: Array<{
-    product_id: string
-    quantity: number
-  }>) => {
+  const createOrder = async (orderData: any) => {
     isLoading.value = true
     try {
-      const response = await path.post('/orders', { items })
+      const response = await path.post('/orders', orderData)
       orders.value.unshift(response.data)
       return response.data
     } catch (err: any) {
@@ -117,11 +125,14 @@ export const useOrdersStore = defineStore('orders', () => {
     confirmedOrders,
     deliveredOrders,
     cancelledOrders,
+    completedOrders,
     fetchOrders,
     createOrder,
     takeOrder,
     updateOrderStatus,
     getOrderById,
-    createCheckoutSession
+    createCheckoutSession,
+    clients,
+    suppliers
   }
 })
