@@ -203,11 +203,18 @@ import type { Order } from "@/types";
 import { PlusIcon, ShoppingCartIcon } from "@heroicons/vue/24/outline";
 
 const role = localStorage.getItem("role");
-const ordersStore = role === "admin" ? useAdminStore() : useOrdersStore();
+const ordersStore =
+  role === "admin"
+    ? useAdminStore()
+    : role === "delivery"
+    ? useAdminStore()
+    : useOrdersStore();
 
 onMounted(() => {
   if (role === "admin") {
     ordersStore.fetchAllOrders && ordersStore.fetchAllOrders();
+  } else if (role === "delivery") {
+    ordersStore.fetchDeliveryOrders && ordersStore.fetchDeliveryOrders();
   } else {
     ordersStore.fetchOrders && ordersStore.fetchOrders();
   }
@@ -313,10 +320,40 @@ const getStatusBadgeClass = (status: string) => {
 };
 
 const updateStatus = (order: Order) => {
-  console.log("Update status for order:", order.id);
+  if (role === "admin" && ordersStore.updateOrderStatus) {
+    ordersStore
+      .updateOrderStatus(order.id, "confirmed")
+      .then(() => {
+        // Optionally show a notification
+      })
+      .catch((err: any) => {
+        console.error("Erreur lors de la mise à jour du statut :", err);
+      });
+  } else if (role === "delivery" && ordersStore.takeOrder) {
+    ordersStore
+      .takeOrder(order.id)
+      .then(() => {
+        // Optionally show a notification
+      })
+      .catch((err: any) => {
+        console.error("Erreur lors de la prise de commande :", err);
+      });
+  } else {
+    console.log("Update status for order:", order.id);
+  }
 };
 
-const viewOrder = (order: Order) => {
-  console.log("View order:", order.id);
+const viewOrder = async (order: Order) => {
+  if (role === "admin" && ordersStore.getOrderById) {
+    try {
+      const orderDetails = await ordersStore.getOrderById(order.id);
+      // Show order details in a modal or route
+      console.log("Order details:", orderDetails);
+    } catch (err) {
+      console.error("Erreur lors de la récupération de la commande :", err);
+    }
+  } else {
+    console.log("View order:", order.id);
+  }
 };
 </script>

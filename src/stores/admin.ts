@@ -9,6 +9,8 @@ export const useAdminStore = defineStore("admin", () => {
   const isLoading = ref(false);
   const error = ref<string | null>(null);
   const products = ref<Product[]>([]);
+  const clients = ref<User[]>([]);
+  const suppliers = ref<User[]>([]);
 
   // Fetch all users with their roles
   const fetchAllUsers = async () => {
@@ -89,40 +91,6 @@ export const useAdminStore = defineStore("admin", () => {
     }
   };
 
-  // Update order status
-  const updateOrderStatus = async (orderId: string, status: string) => {
-    try {
-      const response = await path.put(`/admin/orders/${orderId}/status`, {
-        status,
-      });
-      const index = orders.value.findIndex((o) => o.id === orderId);
-      if (index !== -1) {
-        orders.value[index] = response.data.order;
-      }
-      return response.data;
-    } catch (err: any) {
-      throw new Error(
-        err.response?.data?.message || "Error updating order status"
-      );
-    }
-  };
-
-  const fetchProducts = async () => {
-    isLoading.value = true;
-    error.value = null;
-    try {
-      const response = await path.get("/products");
-      products.value = Array.isArray(response.data)
-        ? response.data
-        : response.data.products || [];
-    } catch (err: any) {
-      error.value = err.response?.data?.message || "Error loading products";
-      products.value = [];
-    } finally {
-      isLoading.value = false;
-    }
-  };
-
   // Create product (admin only)
   const createProduct = async (productData: {
     name: string
@@ -176,10 +144,139 @@ export const useAdminStore = defineStore("admin", () => {
     }
   }
 
+  // Create order (admin only)
+  const createOrder = async (orderData: any) => {
+    isLoading.value = true
+    try {
+      const response = await path.post('/orders', orderData)
+      orders.value.unshift(response.data)
+      return response.data
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'Error creating order'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Update order status (admin only)
+  const updateOrderStatus = async (orderId: string, status: string) => {
+    try {
+      const response = await path.put(`/admin/orders/${orderId}/status`, { status })
+      const index = orders.value.findIndex(o => o.id === orderId)
+      if (index !== -1) {
+        orders.value[index] = response.data.order
+      }
+      return response.data
+    } catch (err: any) {
+      throw new Error(err.response?.data?.message || 'Error updating order status')
+    }
+  }
+
+  // Get single order (admin only)
+  const getOrderById = async (id: string) => {
+    isLoading.value = true
+    try {
+      const response = await path.get(`/admin/orders/${id}`)
+      return response.data
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'Error loading order'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Fetch all products (admin)
+  const fetchProducts = async () => {
+    isLoading.value = true;
+    error.value = null;
+    try {
+      const response = await path.get("/products");
+      products.value = Array.isArray(response.data)
+        ? response.data
+        : response.data.products || [];
+    } catch (err: any) {
+      error.value = err.response?.data?.message || "Error loading products";
+      products.value = [];
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+
+  const fetchClients = async () => {
+    isLoading.value = true
+    error.value = null
+    try {
+      const response = await path.get("/admin/users")
+
+      clients.value = (response.data.users || []).filter((u: any) =>
+        Array.isArray(u.roles) ? u.roles.some((r: any) => r.name === "customer") : false
+      )
+    } catch (err: any) {
+      error.value = err.response?.data?.message || "Error loading clients"
+      clients.value = []
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+
+  const fetchSuppliers = async () => {
+    isLoading.value = true
+    error.value = null
+    try {
+      const response = await path.get("/admin/users")
+
+      suppliers.value = (response.data.users || []).filter((u: any) =>
+        Array.isArray(u.roles) ? u.roles.some((r: any) => r.name === "supplier") : false
+      )
+    } catch (err: any) {
+      error.value = err.response?.data?.message || "Error loading suppliers"
+      suppliers.value = []
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Take order (for delivery users)
+  const takeOrder = async (orderId: string) => {
+    try {
+      const response = await path.put(`/orders/${orderId}/take`);
+      const index = orders.value.findIndex(o => o.id === orderId);
+      if (index !== -1) {
+        orders.value[index] = response.data.order;
+      }
+      return response.data;
+    } catch (err: any) {
+      throw new Error(err.response?.data?.message || 'Error taking order');
+    }
+  };
+
+  // Fetch orders for delivery role
+  const fetchDeliveryOrders = async () => {
+    isLoading.value = true;
+    error.value = null;
+    try {
+      const response = await path.get("/orders");
+      orders.value = Array.isArray(response.data)
+        ? response.data
+        : response.data.orders || [];
+    } catch (err: any) {
+      error.value = err.response?.data?.message || "Error loading orders";
+      orders.value = [];
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
   return {
     users,
     orders,
     products,
+    clients,
+    suppliers,
     isLoading,
     error,
     fetchAllUsers,
@@ -193,5 +290,11 @@ export const useAdminStore = defineStore("admin", () => {
     createProduct,
     updateProduct,
     deleteProduct,
+    createOrder,
+    getOrderById,
+    fetchClients,
+    fetchSuppliers,
+    takeOrder,
+    fetchDeliveryOrders,
   };
 });
