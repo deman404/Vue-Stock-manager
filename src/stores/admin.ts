@@ -123,9 +123,63 @@ export const useAdminStore = defineStore("admin", () => {
     }
   };
 
+  // Create product (admin only)
+  const createProduct = async (productData: {
+    name: string
+    description?: string
+    price: number
+    stock: number
+    image?: string
+  }) => {
+    isLoading.value = true
+    try {
+      const response = await path.post('/products', productData)
+      products.value.unshift(response.data)
+      return response.data
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'Error creating product'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Update product (admin only)
+  const updateProduct = async (id: string, updates: Partial<Product>) => {
+    isLoading.value = true
+    try {
+      const response = await path.put(`/products/${id}`, updates)
+      const index = products.value.findIndex(p => p.id === id)
+      if (index !== -1) {
+        products.value[index] = response.data
+      }
+      return response.data
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'Error updating product'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Delete product (admin only)
+  const deleteProduct = async (id: string) => {
+    isLoading.value = true
+    try {
+      await path.delete(`/products/${id}`)
+      products.value = products.value.filter(p => p.id !== id)
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'Error deleting product'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   return {
     users,
     orders,
+    products,
     isLoading,
     error,
     fetchAllUsers,
@@ -136,5 +190,8 @@ export const useAdminStore = defineStore("admin", () => {
     deleteOrder,
     updateOrderStatus,
     fetchProducts,
+    createProduct,
+    updateProduct,
+    deleteProduct,
   };
 });

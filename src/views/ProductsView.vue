@@ -5,24 +5,21 @@
       <div>
         <h1
           class="text-2xl font-bold text-gray-900 dark:text-white"
-          v-if="haveAccess"
+          v-if="isAdmin"
         >
           Gestion des Produits
         </h1>
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white" v-else>
           Acheter des produits
         </h1>
-        <p
-          class="mt-1 text-sm text-gray-500 dark:text-gray-400"
-          v-if="haveAccess"
-        >
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400" v-if="isAdmin">
           Gérez votre catalogue de produits et suivez les stocks
         </p>
       </div>
       <button
         @click="showAddModal = true"
         class="btn btn-primary mt-4 sm:mt-0"
-        v-if="haveAccess"
+        v-if="isAdmin"
       >
         <PlusIcon class="w-5 h-5 mr-2" />
         Nouveau Produit
@@ -123,7 +120,7 @@
           <div class="flex space-x-2">
             <button
               @click="editProduct(product)"
-              v-if="haveAccess"
+              v-if="isAdmin"
               class="btn btn-secondary flex-1 text-sm"
             >
               <PencilIcon class="w-4 h-4 mr-1" />
@@ -131,7 +128,7 @@
             </button>
             <button
               @click="showStockModal(product)"
-              v-if="haveAccess"
+              v-if="isAdmin"
               class="btn btn-primary flex-1 text-sm"
             >
               <CubeIcon class="w-4 h-4 mr-1" />
@@ -139,6 +136,7 @@
             </button>
             <button
               @click="showStockModal(product)"
+              v-if="!isAdmin"
               class="btn btn-primary flex-1 text-sm"
             >
               <CubeIcon class="w-4 h-4 mr-1" />
@@ -335,9 +333,8 @@ import { useAdminStore } from "@/stores/admin";
 import { PlusIcon, PencilIcon, CubeIcon } from "@heroicons/vue/24/outline";
 
 const userRole = localStorage.getItem("role") || "";
-const haveAccess = computed(() => userRole === "admin");
-const productStore =
-  userRole === "admin" ? useAdminStore() : useProductsStore();
+const isAdmin = userRole === "admin";
+const productStore = isAdmin ? useAdminStore() : useProductsStore();
 
 const searchQuery = ref("");
 const stockFilter = ref("");
